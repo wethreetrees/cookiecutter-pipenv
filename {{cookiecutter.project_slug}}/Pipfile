@@ -7,20 +7,13 @@ bumpversion = "*"
 wheel = "*"
 watchdog = "*"
 flake8 = "*"
-tox = "*"
 coverage = "*"
 {%- if cookiecutter.use_pytest == 'y' %}
 pytest = "*"
 pytest-runner = "*"
-{%- endif %}
-{%- if 'no' not in cookiecutter.command_line_interface|lower %}
-PyInstaller = "*"
 {%- endif %}
 Sphinx = "*"
 twine = "*"
 
 [packages]
 {{ cookiecutter.project_slug }} = {path = ".", editable = true}
-{%- if cookiecutter.command_line_interface|lower == 'click' %}
-click = "*"
-{%- endif %}

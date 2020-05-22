@@ -87,11 +87,6 @@ servedocs: docs ## compile the docs watching for changes
 release: dist ## package and upload a release
 	twine upload dist/*
 
-{%- if 'no' not in cookiecutter.command_line_interface|lower %}
-executable:
-	pyinstaller --name {{ cookiecutter.project_slug }} {{ cookiecutter.project_slug }}/cli.py
-{%- endif %}
-
 dist: clean ## builds source and wheel package
 	python setup.py sdist
 	python setup.py bdist_wheel
