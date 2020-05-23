@@ -7,5 +7,6 @@
   "project_short_description": "{{ cookiecutter.project_name }} contains all the boilerplate you need to create a Python package.",
   "version": "0.1.0",
   "use_pytest": "y",
-  "create_author_file": "y"
+  "create_author_file": "y",
+  "serverless_org": "quietspeculation"
 }

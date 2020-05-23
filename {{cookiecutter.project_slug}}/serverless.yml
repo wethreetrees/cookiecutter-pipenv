@@ -1,0 +1,157 @@
+service: {{ cookiecutter.project_slug }}
+# app and org for use with dashboard.serverless.com
+app: {{ cookiecutter.project_slug }}
+org: {{ cookiecutter.serverless_org }}
+
+provider:
+  name: aws
+  runtime: python3.6
+  stage: ${opt:stage, 'dev'}
+  region: us-east-1
+  timeout: 900
+  memorySize: 256
+  logRetentionInDays: 14
+  reservedConcurrency: 50
+  alarms:
+    - functionErrors
+  iamRoleStatements:
+  - Effect: "Allow"
+    Action:
+      - s3:ListBucket
+      - s3:PutObject
+      - s3:PutObjectAcl
+      - s3:AbortMultipartUpload
+    Resource: 
+      - arn:aws:s3:::${self:custom.buckets.name}
+      - arn:aws:s3:::${self:custom.buckets.name}/*
+  - Effect: "Allow"
+    Action:
+      - "redshift:GetClusterCredentials"
+    Resource:
+      - "arn:aws:redshift:us-east-1:271194993256:dbname:qsredshift/qsrsdb"
+      - "arn:aws:redshift:us-east-1:271194993256:dbuser:qsredshift/qsuser"
+  environment:
+    DB_CLUSTER: qsredshift
+    DB_NAME: qsrsdb
+    DB_PORT: 5439
+    DB_USER: qsuser
+    DB_HOST: qsredshift.cqg9ve9xl0zx.us-east-1.redshift.amazonaws.com
+    STAGING_BUCKET: ${self:custom.buckets.name}
+    AWS_HOST: ${self:custom.buckets.name}.s3.amazonaws.com
+
+package:
+  include:
+    - "!./**"
+    - "./handler.run"
+    - "./${self:service}/**"
+  exclude:
+    - "**"
+
+functions:
+  {{ cookiecutter.project_slug }}:
+    handler: handler.run
+    layers:
+      - {Ref: PythonRequirementsLambdaLayer}
+    # events:
+    #   - schedule:
+    #       rate: cron(0 5 * * ? *)
+    #       name: ${self:service}-${self:provider.stage}
+    #       enabled: ${self:custom.config.${opt:stage, self:provider.stage}.scheduleEnabled, self:custom.config.other.scheduleEnabled}
+    #       input: 
+    #         source_uri: ${self:custom.uris.scryfall_all_cards}
+    #         file_prefix: scryfall_cards_
+    #         bucket_name: ${self:custom.buckets.name}
+
+plugins:
+  - serverless-python-requirements
+  - serverless-plugin-aws-alerts
+  - serverless-s3-local
+  - serverless-dynamodb-local
+  - serverless-offline-dynamodb-streams
+  - serverless-offline
+
+custom:
+  pythonRequirements:
+    layer:
+      name: ${self:service}-pythonrequirements
+      description: Python requirements lamba layer
+    noDeploy: 
+      - pytest
+      - pytest-cov
+      - bandit
+      - flake8
+      - pylint
+      - boto3
+    dockerizePip: non-linux
+    useDownloadCache: false
+    useStaticCache: false
+    invalidateCaches: true
+    slim: true
+  serverless-offline:
+    httpPort: 3000
+    noTimeout: true
+    printOutput: false
+    # useSeparateProcesses: true
+    # useChildProcesses: true
+  s3:
+    port: 5000
+    directory: ./s3_tmp
+    allowMismatchedSignatures: true
+  buckets:
+    name: ${self:service}-${self:provider.stage}
+  config:
+    prod:
+      deletionPolicy: Retain
+      scheduleEnabled: true
+    qa:
+      deletionPolicy: Retain
+      scheduleEnabled: false
+    dev:
+      deletionPolicy: Retain
+      scheduleEnabled: false
+    other:
+      deletionPolicy: Delete
+      scheduleEnabled: false
+
+# resources:
+#   Resources:
+#     S3BucketStaging:
+#       Type: AWS::S3::Bucket
+#       Properties:
+#         BucketName: ${self:custom.buckets.name}
+#         LifecycleConfiguration:
+#           Rules:
+#             - Status: Enabled
+#               ExpirationInDays: 10
+#         PublicAccessBlockConfiguration:
+#           BlockPublicAcls: true
+#           BlockPublicPolicy: true
+#           IgnorePublicAcls: true
+#           RestrictPublicBuckets: true
+#     #   DependsOn: ScryfallETLLambdaPermissionStagingS3
+#     S3BucketStagingBucketPolicy:
+#       Type: AWS::S3::BucketPolicy
+#       Properties:
+#         Bucket:
+#           Ref: S3BucketStaging
+#         PolicyDocument:
+#           Statement:
+#             - Action: s3:*
+#               Effect: Allow
+#               Principal: 
+#                 AWS: arn:aws:iam::271194993256:role/${self:service}-${self:provider.stage}-${self:provider.region}-lambdaRole
+#               Resource:
+#                 - arn:aws:s3:::${self:custom.buckets.name}
+#                 - arn:aws:s3:::${self:custom.buckets.name}/*
+    # ScryfallETLLambdaPermissionStagingS3:
+    #   Type: AWS::Lambda::Permission
+    #   Properties:
+    #     FunctionName:
+    #       'Fn::GetAtt':
+    #         - ScryfallETLLambdaFunction
+    #         - Arn
+    #     Principal: 's3.amazonaws.com'
+    #     Action: 'lambda:InvokeFunction'
+    #     SourceAccount:
+    #       Ref: AWS::AccountId
+    #     SourceArn: 'arn:aws:s3:::${self:custom.buckets.name}'

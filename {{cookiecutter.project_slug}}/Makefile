@@ -78,4 +78,4 @@ coverage: ## check code coverage quickly with the default Python
 	$(BROWSER) htmlcov/index.html
 
 install: clean ## install the package to the active Python's site-packages
-	python setup.py install
+	pipenv install
