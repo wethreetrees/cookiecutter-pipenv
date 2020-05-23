@@ -7,13 +7,13 @@ bumpversion = "*"
 wheel = "*"
 watchdog = "*"
 flake8 = "*"
+bandit = "*"
+pylint = "*"
 coverage = "*"
 {%- if cookiecutter.use_pytest == 'y' %}
 pytest = "*"
 pytest-runner = "*"
 {%- endif %}
-Sphinx = "*"
-twine = "*"
 
 [packages]
 {{ cookiecutter.project_slug }} = {path = ".", editable = true}

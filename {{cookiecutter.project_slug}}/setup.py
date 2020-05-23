@@ -25,7 +25,6 @@ setup(
         'Programming Language :: Python :: 3.8',
     ],
     description="{{ cookiecutter.project_short_description }}",
-    install_requires=requirements,
     long_description=readme + '\n\n' + history,
     include_package_data=True,
     keywords='{{ cookiecutter.project_slug }}',
