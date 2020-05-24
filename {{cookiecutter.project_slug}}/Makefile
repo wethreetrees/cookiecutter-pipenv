@@ -42,6 +42,12 @@ BOLD=\033[1m
 help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
+new_repo:
+	git init
+	git add .
+	git commit -m "initial commit"
+	hub create -o -p {{ cookiecutter.github_username }}/{{ cookiecutter.project_slug }}
+
 clean: clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
 
 clean-pyc: ## remove Python file artifacts
@@ -84,25 +90,22 @@ coverage: ## check code coverage quickly with the default Python
 install: clean ## install the package to the active Python's site-packages
 	@pipenv install
 
-invoke:
+invoke: ## invoke function deployed to stage: STAGE (dev)
 	@echo "${BLUE}Invoking ${MODULE} to ${STAGE_LOWER}...${NC}"
 	npx serverless invoke -f {{ cookiecutter.project_slug }} --stage ${STAGE_LOWER} ${DATA_PARAM}
 
-run_local: clean test
+run_local: clean test ## invoke function locally
 	@$(MAKE) _invoke_local || $(MAKE) _stop_serverless_offline
 
-deploy: _package _deploy_package
+deploy: _package _deploy_package ## deploy function to stage: STAGE (dev)
 
-remove:
+remove: ## remove function deployed to stage: STAGE (dev)
 	@echo "${BLUE}Removing ${STAGE_LOWER} for service: ${MODULE}...${NC}"
 	npx serverless remove --stage ${STAGE_LOWER}
 
 ############# 
 #  Helpers  #
 ############# 
-
-_test_vars:
-
 
 _start_serverless_offline: _stop_serverless_offline
 	@${OFFLINE_PROCESS} & echo $$! > /dev/null
