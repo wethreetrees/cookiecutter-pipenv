@@ -1,4 +1,4 @@
-.PHONY: clean clean-test clean-pyc clean-build docs help
+.PHONY: clean clean-test clean-pyc help start stop remove invoke
 .DEFAULT_GOAL := help
 
 define BROWSER_PYSCRIPT
@@ -26,20 +26,23 @@ export PRINT_HELP_PYSCRIPT
 
 BROWSER := python -c "$$BROWSER_PYSCRIPT"
 MODULE := {{ cookiecutter.project_slug }}
+STAGE := dev
+STAGE_LOWER := $(shell echo "${STAGE}" | tr '[:upper:]' '[:lower:]')
+OFFLINE_PROCESS := serverless offline start
+KEEPALIVE := false
+# DATA := 
+ifeq ($(DATA),)
+DATA_PARAM := $(something else)
+endif
+
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 BOLD=\033[1m
 
 help:
-	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
+	python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
-clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
-
-clean-build: ## remove build artifacts
-	rm -fr build/
-	rm -fr .eggs/
-	find . \( -path ./env -o -path ./venv -o -path ./.env -o -path ./.venv \) -prune -o -name '*.egg-info' -exec rm -fr {} +
-	find . \( -path ./env -o -path ./venv -o -path ./.env -o -path ./.venv \) -prune -o -name '*.egg' -exec rm -f {} +
+clean: clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
 
 clean-pyc: ## remove Python file artifacts
 	find . -name '*.pyc' -exec rm -f {} +
@@ -49,6 +52,7 @@ clean-pyc: ## remove Python file artifacts
 
 clean-test: ## remove test and coverage artifacts
 	rm -f .coverage
+	rm -f coverage.xml
 	rm -fr htmlcov/
 	rm -fr .pytest_cache
 
@@ -79,3 +83,44 @@ coverage: ## check code coverage quickly with the default Python
 
 install: clean ## install the package to the active Python's site-packages
 	pipenv install
+
+invoke:
+	echo "${BLUE}Invoking ${MODULE} to ${STAGE_LOWER}...${NC}"
+	npx serverless invoke -f {{ cookiecutter.project_slug }} --stage ${STAGE_LOWER} ${DATA_PARAM}
+
+run_local: clean test
+	$(MAKE) _invoke_local || $(MAKE) _stop_serverless_offline
+
+deploy: _package _deploy_package
+
+remove:
+	echo "${BLUE}Removing ${STAGE_LOWER} for service: ${MODULE}...${NC}"
+	npx serverless remove --stage ${STAGE_LOWER}
+
+############# 
+#  Helpers  #
+############# 
+
+_test_vars:
+
+
+_start_serverless_offline: _stop_serverless_offline
+	${OFFLINE_PROCESS} & echo $$! > /dev/null
+	sleep 10
+	exit
+
+_stop_serverless_offline:
+	if pgrep -f '${OFFLINE_PROCESS}' > /dev/null; then pkill -f '${OFFLINE_PROCESS}' & pkill java;	fi & echo $$! > /dev/null
+	sleep 2
+
+_invoke_local: _start_serverless_offline
+	sleep 5
+	npx serverless invoke local -f {{ cookiecutter.project_slug }} --stage ${STAGE_LOWER} ${DATA_PARAM}
+	if [ $(KEEPALIVE) = false ]; then $(MAKE) _stop_serverless_offline;	fi
+
+_package:
+	npx serverless package --stage ${STAGE_LOWER} --package artifacts
+
+_deploy_package:
+	echo "${BLUE}Deploying ${MODULE} to ${STAGE_LOWER}...${NC}"
+	npx serverless deploy --stage ${STAGE_LOWER} --package artifacts
