@@ -40,7 +40,7 @@ NC='\033[0m' # No Color
 BOLD=\033[1m
 
 help:
-	python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
+	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
 clean: clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
 
@@ -57,44 +57,44 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr .pytest_cache
 
 lint: ## check style with flake8
-	echo "${BLUE}Running Pylint against source and test files...${NC}"
-	pylint --rcfile=setup.cfg **/*.py
-	echo "${BLUE}Running Flake8 against source and test files...${NC}"
-	flake8 ${MODULE}
-	echo "${BLUE}Running Bandit against source files...${NC}"
-	bandit -r --ini setup.cfg
+	@echo "${BLUE}Running Pylint against source and test files...${NC}"
+	@pylint --rcfile=setup.cfg **/*.py
+	@echo "${BLUE}Running Flake8 against source and test files...${NC}"
+	@flake8 ${MODULE}
+	@echo "${BLUE}Running Bandit against source files...${NC}"
+	@bandit -r --ini setup.cfg
 
 test: ## run tests quickly with the default Python
 {%- if cookiecutter.use_pytest == 'y' %}
-	py.test
+	@py.test
 {%- else %}
-	python setup.py test
+	@python setup.py test
 {%- endif %}
 
 coverage: ## check code coverage quickly with the default Python
 {%- if cookiecutter.use_pytest == 'y' %}
-	coverage run --source {{ cookiecutter.project_slug }} -m pytest
+	@coverage run --source {{ cookiecutter.project_slug }} -m pytest
 {%- else %}
-	coverage run --source {{ cookiecutter.project_slug }} setup.py test
+	@coverage run --source {{ cookiecutter.project_slug }} setup.py test
 {%- endif %}
-	coverage report -m
-	coverage html
-	$(BROWSER) htmlcov/index.html
+	@coverage report -m
+	@coverage html
+	@$(BROWSER) htmlcov/index.html
 
 install: clean ## install the package to the active Python's site-packages
-	pipenv install
+	@pipenv install
 
 invoke:
-	echo "${BLUE}Invoking ${MODULE} to ${STAGE_LOWER}...${NC}"
+	@echo "${BLUE}Invoking ${MODULE} to ${STAGE_LOWER}...${NC}"
 	npx serverless invoke -f {{ cookiecutter.project_slug }} --stage ${STAGE_LOWER} ${DATA_PARAM}
 
 run_local: clean test
-	$(MAKE) _invoke_local || $(MAKE) _stop_serverless_offline
+	@$(MAKE) _invoke_local || $(MAKE) _stop_serverless_offline
 
 deploy: _package _deploy_package
 
 remove:
-	echo "${BLUE}Removing ${STAGE_LOWER} for service: ${MODULE}...${NC}"
+	@echo "${BLUE}Removing ${STAGE_LOWER} for service: ${MODULE}...${NC}"
 	npx serverless remove --stage ${STAGE_LOWER}
 
 ############# 
@@ -105,22 +105,22 @@ _test_vars:
 
 
 _start_serverless_offline: _stop_serverless_offline
-	${OFFLINE_PROCESS} & echo $$! > /dev/null
-	sleep 10
-	exit
+	@${OFFLINE_PROCESS} & echo $$! > /dev/null
+	@sleep 10
+	@exit
 
 _stop_serverless_offline:
-	if pgrep -f '${OFFLINE_PROCESS}' > /dev/null; then pkill -f '${OFFLINE_PROCESS}' & pkill java;	fi & echo $$! > /dev/null
-	sleep 2
+	@if pgrep -f '${OFFLINE_PROCESS}' > /dev/null; then pkill -f '${OFFLINE_PROCESS}' & pkill java;	fi & echo $$! > /dev/null
+	@sleep 2
 
 _invoke_local: _start_serverless_offline
-	sleep 5
-	npx serverless invoke local -f {{ cookiecutter.project_slug }} --stage ${STAGE_LOWER} ${DATA_PARAM}
-	if [ $(KEEPALIVE) = false ]; then $(MAKE) _stop_serverless_offline;	fi
+	@sleep 5
+	@npx serverless invoke local -f {{ cookiecutter.project_slug }} --stage ${STAGE_LOWER} ${DATA_PARAM}
+	@if [ $(KEEPALIVE) = false ]; then $(MAKE) _stop_serverless_offline;	fi
 
 _package:
-	npx serverless package --stage ${STAGE_LOWER} --package artifacts
+	@npx serverless package --stage ${STAGE_LOWER} --package artifacts
 
 _deploy_package:
-	echo "${BLUE}Deploying ${MODULE} to ${STAGE_LOWER}...${NC}"
-	npx serverless deploy --stage ${STAGE_LOWER} --package artifacts
+	@echo "${BLUE}Deploying ${MODULE} to ${STAGE_LOWER}...${NC}"
+	@npx serverless deploy --stage ${STAGE_LOWER} --package artifacts
