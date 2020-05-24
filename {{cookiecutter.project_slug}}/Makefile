@@ -46,7 +46,8 @@ new_repo:
 	git init
 	git add .
 	git commit -m "initial commit"
-	hub create -p -d {{ cookiecutter.project_short_description }} {{ cookiecutter.github_username }}/{{ cookiecutter.project_slug }}
+	hub create -p -d "{{ cookiecutter.project_short_description }}" {{ cookiecutter.project_slug }}
+	git push origin master
 
 clean: clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
 
