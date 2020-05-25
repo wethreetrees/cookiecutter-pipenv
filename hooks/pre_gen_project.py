@@ -24,5 +24,11 @@ try:
     thisRepo = [repo for repo in repos if repo['full_name'] == f"{github_username}/{module_name}"]
     if thisRepo:
         print(('ERROR: The repository (%s) already exists. Please select a new project name.' % f"{github_username}/{module_name}"))
+
+        # Exit to cancel project
+        sys.exit(1)
 except FileNotFoundError:
     print('ERROR: github hub not installed. See site for further info: https://github.com/github/hub')
+
+    # Exit to cancel project
+    sys.exit(1)
