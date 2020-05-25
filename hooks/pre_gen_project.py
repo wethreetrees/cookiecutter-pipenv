@@ -1,6 +1,7 @@
 import re
-import requests
 import sys
+import subprocess
+import json
 
 
 MODULE_REGEX = r'^[_a-zA-Z][_a-zA-Z0-9]+$'
@@ -15,9 +16,13 @@ if not re.match(MODULE_REGEX, module_name):
     # Exit to cancel project
     sys.exit(1)
 
-response = requests.get(f"https://api.github.com/repos/{github_username}/{module_name}")
-
-if response.status_code == 200:
-    print(('ERROR: The repository (%s) already exists. Please select a new project name.' % f"{github_username}/{module_name}"))
-
-    sys.exit(1)
+try:
+    hubCommand = "hub api user/repos"
+    process = subprocess.Popen(hubCommand.split(), stdout=subprocess.PIPE)
+    output, error = process.communicate()
+    repos = json.loads(output)
+    thisRepo = [repo for repo in repos if repo['full_name'] == f"{github_username}/{module_name}"]
+    if thisRepo:
+        print(('ERROR: The repository (%s) already exists. Please select a new project name.' % f"{github_username}/{module_name}"))
+except FileNotFoundError:
+    print('ERROR: github hub not installed. See site for further info: https://github.com/github/hub')
