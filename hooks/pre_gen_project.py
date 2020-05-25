@@ -17,9 +17,7 @@ if not re.match(MODULE_REGEX, module_name):
 
 response = requests.get(f"https://api.github.com/repos/{github_username}/{module_name}")
 
-try:
-    response.raise_for_status()
-except requests.exceptions.HTTPError:
+if response.status_code == 200:
     print(('ERROR: The repository (%s) already exists. Please select a new project name.' % f"{github_username}/{module_name}"))
 
     sys.exit(1)
